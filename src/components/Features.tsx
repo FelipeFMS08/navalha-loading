@@ -139,15 +139,15 @@ export function Features() {
 }
 
 function CalendarVisual() {
-  const days = ["S", "T", "Q", "Q", "S", "S", "D"];
+  const days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
   const slots = Array.from({ length: 42 });
   const booked = new Set([3, 4, 10, 11, 17, 18, 25, 26, 33]);
   const now = 18;
   return (
     <div className="mt-6 grid h-full grid-cols-7 gap-1.5">
-      {days.map((d) => (
+      {days.map((d, idx) => (
         <div
-          key={d}
+          key={`${d}-${idx}`}
           className="text-center font-mono text-[10px] uppercase tracking-wider text-foreground/40"
         >
           {d}
