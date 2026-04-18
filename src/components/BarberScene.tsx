@@ -1,12 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  Environment,
-  Float,
-  MeshDistortMaterial,
-  Sparkles,
-} from "@react-three/drei";
+import { Float } from "@react-three/drei";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -70,16 +65,14 @@ function BarberPole() {
           side={THREE.DoubleSide}
         />
       </mesh>
-      {/* Glass overlay */}
+      {/* Glass overlay — simple transparent sleeve, no transmission */}
       <mesh>
-        <cylinderGeometry args={[0.38, 0.38, 3.02, 64, 1, true]} />
-        <meshPhysicalMaterial
+        <cylinderGeometry args={[0.385, 0.385, 3.02, 64, 1, true]} />
+        <meshStandardMaterial
           transparent
           opacity={0.18}
-          roughness={0.02}
-          transmission={1}
-          thickness={0.5}
-          clearcoat={1}
+          roughness={0.05}
+          metalness={0.1}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -161,15 +154,13 @@ function GlowOrb() {
   return (
     <Float speed={0.8} rotationIntensity={0.2} floatIntensity={0.6}>
       <mesh ref={ref} position={[4.2, -1.8, -1]}>
-        <icosahedronGeometry args={[0.6, 2]} />
-        <MeshDistortMaterial
+        <icosahedronGeometry args={[0.6, 1]} />
+        <meshStandardMaterial
           color="#ff5b1a"
           emissive="#ff1f6b"
           emissiveIntensity={0.55}
           metalness={0.5}
           roughness={0.15}
-          distort={0.4}
-          speed={1.4}
         />
       </mesh>
     </Float>
@@ -222,70 +213,107 @@ function Comb() {
   );
 }
 
-function AutoRotate({ children }: { children: React.ReactNode }) {
-  const ref = useRef<THREE.Group>(null);
+// Deterministic pseudo-random so particle seeds are stable across renders.
+function mulberry32(seed: number) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = t;
+    r = Math.imul(r ^ (r >>> 15), r | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Lightweight particle field — instanced mesh with manual shader-free motion.
+function SparkField({ count = 60 }: { count?: number }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const seeds = useMemo(() => {
+    const rand = mulberry32(1337);
+    return Array.from({ length: count }, () => ({
+      x: (rand() - 0.5) * 9,
+      y: (rand() - 0.5) * 5,
+      z: (rand() - 0.5) * 3,
+      speed: 0.2 + rand() * 0.6,
+      phase: rand() * Math.PI * 2,
+      size: 0.02 + rand() * 0.04,
+    }));
+  }, [count]);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
   const t = useRef(0);
+
   useFrame((_, delta) => {
     if (!ref.current) return;
     t.current += delta;
-    ref.current.rotation.y = Math.sin(t.current * 0.15) * 0.08;
+    for (let i = 0; i < seeds.length; i++) {
+      const s = seeds[i];
+      dummy.position.set(
+        s.x + Math.sin(t.current * s.speed + s.phase) * 0.25,
+        s.y + Math.cos(t.current * s.speed * 0.7 + s.phase) * 0.35,
+        s.z
+      );
+      dummy.scale.setScalar(s.size);
+      dummy.updateMatrix();
+      ref.current.setMatrixAt(i, dummy.matrix);
+    }
+    ref.current.instanceMatrix.needsUpdate = true;
   });
-  return <group ref={ref}>{children}</group>;
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 6, 6]} />
+      <meshBasicMaterial color="#ffe14d" transparent opacity={0.85} />
+    </instancedMesh>
+  );
 }
 
 export function BarberScene() {
   return (
     <Canvas
-      camera={{ position: [0, 0, 5.5], fov: 42 }}
-      dpr={[1, 2]}
+      camera={{ position: [0, 0, 7.5], fov: 42 }}
+      dpr={[1, 1.5]}
       className="!absolute inset-0"
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+      gl={{
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+        failIfMajorPerformanceCaveat: false,
+      }}
+      onCreated={({ gl, invalidate }) => {
+        const canvas = gl.domElement;
+        const onLost = (e: Event) => {
+          e.preventDefault();
+        };
+        const onRestored = () => {
+          invalidate();
+        };
+        canvas.addEventListener("webglcontextlost", onLost, false);
+        canvas.addEventListener("webglcontextrestored", onRestored, false);
+      }}
     >
-      <ambientLight intensity={0.75} />
-      <directionalLight position={[5, 6, 4]} intensity={2.6} />
+      <ambientLight intensity={0.85} />
+      <directionalLight position={[5, 6, 4]} intensity={2.4} />
       <spotLight
         position={[-4, 4, 3]}
         angle={0.7}
         penumbra={0.9}
-        intensity={2.6}
+        intensity={2.4}
         color="#ffe14d"
       />
-      <pointLight position={[2, -2, 2]} intensity={1.4} color="#ff5b1a" />
+      <pointLight position={[2, -2, 2]} intensity={1.3} color="#ff5b1a" />
       <pointLight position={[-3, -1, 2]} intensity={0.8} color="#1960ff" />
 
-      <AutoRotate>
-        {/* Pole offset to the right so it doesn't clash with headline */}
-        <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.5}>
-          <group position={[2.2, -0.1, 0]} rotation={[0, 0.2, 0]}>
-            <BarberPole />
-          </group>
-        </Float>
+      {/* Pole offset to the right so it doesn't clash with headline */}
+      <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.5}>
+        <group position={[2.2, -0.1, 0]} rotation={[0, 0.2, 0]}>
+          <BarberPole />
+        </group>
+      </Float>
 
-        <FloatingRazor position={[-1.4, 1.8, -0.5]} />
-        <Comb />
-        <GlowOrb />
-
-        {/* Ambient sparks filling the scene */}
-        <Sparkles
-          count={120}
-          scale={[10, 6, 4]}
-          size={2.6}
-          speed={0.45}
-          color="#ffe14d"
-          opacity={0.9}
-        />
-        <Sparkles
-          count={40}
-          scale={[8, 5, 3]}
-          size={4}
-          speed={0.25}
-          color="#ff5b1a"
-          opacity={0.7}
-          position={[0, -0.4, 0.5]}
-        />
-      </AutoRotate>
-
-      <Environment preset="city" />
+      <FloatingRazor position={[-1.4, 1.8, -0.5]} />
+      <Comb />
+      <GlowOrb />
+      <SparkField count={50} />
     </Canvas>
   );
 }
