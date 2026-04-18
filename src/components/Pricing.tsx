@@ -128,11 +128,18 @@ export function Pricing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.1, duration: 0.6 }}
+            whileHover={{ y: -6 }}
+            onMouseMove={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              const r = el.getBoundingClientRect();
+              el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+              el.style.setProperty("--my", `${e.clientY - r.top}px`);
+            }}
             className={cn(
-              "relative rounded-3xl p-8 transition-all",
+              "spotlight relative rounded-3xl p-8 transition-all",
               plan.featured
                 ? "shimmer bg-gradient-to-b from-surface-2 to-surface"
-                : "border border-white/5 bg-surface/40 hover:border-white/15"
+                : "border border-white/5 bg-surface/40 hover:border-white/20"
             )}
           >
             {plan.featured && (

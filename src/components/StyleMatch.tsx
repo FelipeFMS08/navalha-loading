@@ -207,6 +207,27 @@ export function StyleMatch() {
             {/* Holographic face silhouette */}
             <div className="relative mx-auto mt-4 aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-black to-surface-2 ring-1 ring-white/10">
               <div className="absolute inset-0 grid-bg opacity-50" />
+              {/* Radar rings */}
+              <div className="pointer-events-none absolute inset-0 grid place-items-center">
+                <div className="relative h-[68%] w-[68%]">
+                  <div className="radar-ring absolute inset-0 rounded-full border border-accent/40" />
+                  <div
+                    className="radar-ring absolute inset-0 rounded-full border border-accent-2/30"
+                    style={{ animationDelay: "0.8s" }}
+                  />
+                  <div
+                    className="radar-ring absolute inset-0 rounded-full border border-accent/20"
+                    style={{ animationDelay: "1.6s" }}
+                  />
+                </div>
+              </div>
+              {/* HUD corner brackets */}
+              <div className="pointer-events-none absolute inset-3">
+                <span className="absolute left-0 top-0 h-3 w-3 border-l border-t border-accent-2/70" />
+                <span className="absolute right-0 top-0 h-3 w-3 border-r border-t border-accent-2/70" />
+                <span className="absolute bottom-0 left-0 h-3 w-3 border-b border-l border-accent-2/70" />
+                <span className="absolute bottom-0 right-0 h-3 w-3 border-b border-r border-accent-2/70" />
+              </div>
 
               {/* Face silhouette */}
               <motion.svg
@@ -275,16 +296,36 @@ export function StyleMatch() {
                   strokeWidth="1"
                   strokeLinecap="round"
                 />
-                {/* Scan grid */}
-                <motion.path
-                  d="M20 100 L180 100"
-                  stroke="#ffe14d"
-                  strokeWidth="0.8"
-                  strokeDasharray="2 4"
+                {/* Scan trail with glow */}
+                <defs>
+                  <filter id="scan-glow">
+                    <feGaussianBlur stdDeviation="1.4" />
+                  </filter>
+                  <linearGradient id="scan-grad" x1="0%" x2="100%" y1="0%" y2="0%">
+                    <stop offset="0%" stopColor="#ffe14d" stopOpacity="0" />
+                    <stop offset="50%" stopColor="#ffe14d" stopOpacity="1" />
+                    <stop offset="100%" stopColor="#ff5b1a" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <motion.g
                   animate={{ y: [-70, 70, -70] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                  opacity={0.7}
-                />
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <path
+                    d="M20 100 L180 100"
+                    stroke="url(#scan-grad)"
+                    strokeWidth="2"
+                    filter="url(#scan-glow)"
+                    opacity={0.9}
+                  />
+                  <path
+                    d="M20 100 L180 100"
+                    stroke="#ffe14d"
+                    strokeWidth="0.6"
+                    strokeDasharray="2 4"
+                    opacity={0.9}
+                  />
+                </motion.g>
               </motion.svg>
 
               {/* Scanning overlay */}
@@ -328,20 +369,52 @@ export function StyleMatch() {
                 </motion.div>
               </AnimatePresence>
 
-              {/* Match bar */}
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
-                  <motion.div
-                    key={style.id + "-bar"}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${style.match}%` }}
-                    transition={{ duration: 0.9, ease: "easeOut" }}
-                    className="h-full bg-gradient-to-r from-accent to-accent-2"
-                  />
+              {/* Match bar + HUD metrics */}
+              <div className="mt-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
+                    <motion.div
+                      key={style.id + "-bar"}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${style.match}%` }}
+                      transition={{ duration: 0.9, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-accent via-accent-2 to-accent"
+                      style={{ backgroundSize: "200% 100%" }}
+                    />
+                    <motion.div
+                      className="absolute inset-y-0 w-20 bg-gradient-to-r from-transparent via-white/60 to-transparent mix-blend-overlay"
+                      animate={{ x: ["-20%", "400%"] }}
+                      transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+                    />
+                  </div>
+                  <span className="font-mono text-xs tabular-nums text-accent-2">
+                    {style.match}%
+                  </span>
                 </div>
-                <span className="font-mono text-xs tabular-nums text-accent-2">
-                  {style.match}%
-                </span>
+                {/* Tiny HUD bars */}
+                <div className="mt-3 grid grid-cols-3 gap-3">
+                  {[
+                    { k: "face shape", v: 92 },
+                    { k: "hair density", v: 78 },
+                    { k: "trend 2026", v: 96 },
+                  ].map((m) => (
+                    <div key={m.k}>
+                      <div className="mb-1 flex items-center justify-between text-[9px] uppercase tracking-[0.2em] text-foreground/40">
+                        <span>{m.k}</span>
+                        <span className="font-mono tabular-nums">{m.v}</span>
+                      </div>
+                      <div className="h-[3px] overflow-hidden rounded-full bg-white/5">
+                        <motion.div
+                          key={style.id + m.k}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${m.v}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="h-full bg-accent-2/80"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
