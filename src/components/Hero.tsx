@@ -30,14 +30,14 @@ export function Hero() {
       <div className="aurora" aria-hidden />
       <div className="grid-bg absolute inset-0" aria-hidden />
 
-      {/* 3D scene, absolutely positioned on the right */}
-      <div className="pointer-events-none absolute inset-0 opacity-90">
+      {/* 3D scene, absolutely positioned — covers full hero */}
+      <div className="pointer-events-none absolute inset-0 z-[1]">
         <BarberScene />
       </div>
 
       <motion.div
         style={{ y, opacity }}
-        className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-10 px-5 md:grid-cols-[1.1fr_0.9fr] md:px-8"
+        className="pointer-events-none relative z-[5] mx-auto grid w-full max-w-7xl items-center gap-10 px-5 md:grid-cols-[1.1fr_0.9fr] md:px-8"
       >
         <div>
           <motion.div
@@ -97,7 +97,7 @@ export function Hero() {
             <a
               href="#cta"
               data-cursor="hover"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-[0_10px_40px_-10px_rgba(255,91,26,0.6)] transition-transform active:scale-[0.98]"
+              className="group pointer-events-auto relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-[0_10px_40px_-10px_rgba(255,91,26,0.6)] transition-transform active:scale-[0.98]"
             >
               <span className="absolute inset-0 translate-y-full bg-gradient-to-r from-accent to-accent-2 transition-transform duration-500 group-hover:translate-y-0" />
               <span className="relative">Começar grátis — 14 dias</span>
@@ -106,7 +106,7 @@ export function Hero() {
             <a
               href="#demo"
               data-cursor="hover"
-              className="inline-flex items-center gap-2 rounded-full border border-foreground/15 px-5 py-3 text-sm text-foreground/85 transition-colors hover:border-foreground/40 hover:text-foreground"
+              className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-foreground/15 px-5 py-3 text-sm text-foreground/85 transition-colors hover:border-foreground/40 hover:text-foreground"
             >
               <PlayCircle className="h-4 w-4" /> Ver demo (1:23)
             </a>

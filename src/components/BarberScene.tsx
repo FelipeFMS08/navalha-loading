@@ -154,12 +154,12 @@ function GlowOrb() {
   });
   return (
     <Float speed={0.8} rotationIntensity={0.2} floatIntensity={0.6}>
-      <mesh ref={ref} position={[2.4, -1.2, -1]}>
-        <icosahedronGeometry args={[0.55, 2]} />
+      <mesh ref={ref} position={[4.2, -1.8, -1]}>
+        <icosahedronGeometry args={[0.6, 2]} />
         <MeshDistortMaterial
           color="#ff5b1a"
           emissive="#ff1f6b"
-          emissiveIntensity={0.35}
+          emissiveIntensity={0.45}
           metalness={0.5}
           roughness={0.15}
           distort={0.4}
@@ -173,35 +173,31 @@ function GlowOrb() {
 export function BarberScene() {
   return (
     <Canvas
-      camera={{ position: [0, 0, 6.5], fov: 38 }}
-      shadows
+      camera={{ position: [0, 0, 5.5], fov: 42 }}
       dpr={[1, 2]}
       className="!absolute inset-0"
+      gl={{ antialias: true, alpha: true }}
     >
-      <ambientLight intensity={0.6} />
-      <directionalLight
-        position={[5, 6, 4]}
-        intensity={2.4}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-      />
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[5, 6, 4]} intensity={3} />
       <spotLight
         position={[-4, 4, 3]}
-        angle={0.6}
-        penumbra={0.8}
-        intensity={1.8}
+        angle={0.7}
+        penumbra={0.9}
+        intensity={2.4}
         color="#ffe14d"
       />
-      <pointLight position={[0, -3, 2]} intensity={0.6} color="#ff5b1a" />
+      <pointLight position={[2, -2, 2]} intensity={1.2} color="#ff5b1a" />
+      <pointLight position={[-3, -1, 2]} intensity={0.6} color="#1960ff" />
 
-      <Float speed={1.2} rotationIntensity={0.3} floatIntensity={0.6}>
-        <group rotation={[0, 0.2, 0]}>
+      {/* Pole offset to the right so it doesn't clash with headline */}
+      <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.5}>
+        <group position={[2.2, -0.1, 0]} rotation={[0, 0.2, 0]}>
           <BarberPole />
         </group>
       </Float>
 
-      <FloatingRazor position={[-2.4, 1.2, -0.5]} />
+      <FloatingRazor position={[-1.4, 1.8, -0.5]} />
       <GlowOrb />
 
       <Environment preset="city" />
