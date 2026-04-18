@@ -7,6 +7,7 @@ import { Scissors } from "lucide-react";
 const NAV = [
   { label: "Produto", href: "#features" },
   { label: "StyleMatch", href: "#stylematch" },
+  { label: "TryCut", href: "#trycut" },
   { label: "Preços", href: "#pricing" },
   { label: "Clientes", href: "#testimonials" },
 ];

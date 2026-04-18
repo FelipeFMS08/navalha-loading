@@ -109,8 +109,14 @@ export function Features() {
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.5, delay: i * 0.06 }}
             whileHover={{ y: -4 }}
+            onMouseMove={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              const r = el.getBoundingClientRect();
+              el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+              el.style.setProperty("--my", `${e.clientY - r.top}px`);
+            }}
             className={cn(
-              "group relative overflow-hidden rounded-3xl border border-white/5 bg-surface/60 p-6 transition-colors hover:border-white/15",
+              "spotlight group relative overflow-hidden rounded-3xl border border-white/5 bg-surface/60 p-6 transition-colors hover:border-white/20",
               f.className
             )}
           >

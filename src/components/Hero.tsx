@@ -1,6 +1,12 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "motion/react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useMotionValue,
+  useSpring,
+} from "motion/react";
 import { useRef } from "react";
 import dynamic from "next/dynamic";
 import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
@@ -11,6 +17,67 @@ const BarberScene = dynamic(
 );
 
 const words = ["Agende.", "Corte.", "Repita."];
+
+function MagneticButton({
+  children,
+  href,
+  variant = "primary",
+}: {
+  children: React.ReactNode;
+  href: string;
+  variant?: "primary" | "ghost";
+}) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 260, damping: 18, mass: 0.6 });
+  const sy = useSpring(y, { stiffness: 260, damping: 18, mass: 0.6 });
+
+  const handleMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    x.set((e.clientX - cx) * 0.35);
+    y.set((e.clientY - cy) * 0.35);
+  };
+  const handleLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  if (variant === "ghost") {
+    return (
+      <motion.a
+        ref={ref}
+        href={href}
+        data-cursor="hover"
+        onMouseMove={handleMove}
+        onMouseLeave={handleLeave}
+        style={{ x: sx, y: sy }}
+        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-white/[0.02] px-5 py-3 text-sm text-foreground/85 backdrop-blur-sm transition-colors hover:border-foreground/40 hover:text-foreground"
+      >
+        {children}
+      </motion.a>
+    );
+  }
+
+  return (
+    <motion.a
+      ref={ref}
+      href={href}
+      data-cursor="hover"
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{ x: sx, y: sy }}
+      className="group pointer-events-auto relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-[0_14px_56px_-10px_rgba(255,91,26,0.85)] transition-transform active:scale-[0.97]"
+    >
+      <span className="absolute inset-0 translate-y-full bg-gradient-to-r from-accent to-accent-2 transition-transform duration-500 group-hover:translate-y-0" />
+      <span className="relative">{children}</span>
+      <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
+    </motion.a>
+  );
+}
 
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
@@ -27,8 +94,17 @@ export function Hero() {
       id="home"
       className="relative flex min-h-[100svh] items-center overflow-hidden pt-20"
     >
-      <div className="aurora" aria-hidden />
+      <div className="aurora-pro" aria-hidden />
       <div className="grid-bg absolute inset-0" aria-hidden />
+      {/* Radial vignette */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(1100px 700px at 75% 40%, rgba(255,91,26,0.12), transparent 60%)",
+        }}
+      />
 
       {/* 3D scene, absolutely positioned — covers full hero */}
       <div className="pointer-events-none absolute inset-0 z-[1]">
@@ -68,7 +144,9 @@ export function Hero() {
               >
                 <span
                   className={
-                    i === 1 ? "italic text-gradient-accent" : "text-gradient"
+                    i === 1
+                      ? "italic text-gradient-accent hue-cycle"
+                      : "text-gradient"
                   }
                 >
                   {w}
@@ -84,8 +162,10 @@ export function Hero() {
             className="mt-7 max-w-xl text-pretty text-base text-foreground/70 md:text-lg"
           >
             A plataforma invisível que organiza a agenda da sua barbearia,
-            encanta clientes e devolve horas do seu dia. Sem fila. Sem estresse.
-            Só corte.
+            encanta clientes e devolve horas do seu dia.{" "}
+            <span className="under-sweep font-medium text-foreground">
+              Sem fila. Sem estresse. Só corte.
+            </span>
           </motion.p>
 
           <motion.div
@@ -94,22 +174,12 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.9 }}
             className="mt-9 flex flex-wrap items-center gap-3"
           >
-            <a
-              href="#cta"
-              data-cursor="hover"
-              className="group pointer-events-auto relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-[0_10px_40px_-10px_rgba(255,91,26,0.6)] transition-transform active:scale-[0.98]"
-            >
-              <span className="absolute inset-0 translate-y-full bg-gradient-to-r from-accent to-accent-2 transition-transform duration-500 group-hover:translate-y-0" />
-              <span className="relative">Começar grátis — 14 dias</span>
-              <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </a>
-            <a
-              href="#demo"
-              data-cursor="hover"
-              className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-foreground/15 px-5 py-3 text-sm text-foreground/85 transition-colors hover:border-foreground/40 hover:text-foreground"
-            >
+            <MagneticButton href="#trycut">
+              Experimente o corte grátis
+            </MagneticButton>
+            <MagneticButton href="#stylematch" variant="ghost">
               <PlayCircle className="h-4 w-4" /> Ver demo (1:23)
-            </a>
+            </MagneticButton>
           </motion.div>
 
           <motion.div

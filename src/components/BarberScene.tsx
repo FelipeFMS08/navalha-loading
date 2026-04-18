@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Float, MeshDistortMaterial } from "@react-three/drei";
+import { Float } from "@react-three/drei";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -65,16 +65,14 @@ function BarberPole() {
           side={THREE.DoubleSide}
         />
       </mesh>
-      {/* Glass overlay */}
+      {/* Glass overlay — simple transparent sleeve, no transmission */}
       <mesh>
-        <cylinderGeometry args={[0.38, 0.38, 3.02, 64, 1, true]} />
-        <meshPhysicalMaterial
+        <cylinderGeometry args={[0.385, 0.385, 3.02, 64, 1, true]} />
+        <meshStandardMaterial
           transparent
           opacity={0.18}
-          roughness={0.02}
-          transmission={1}
-          thickness={0.5}
-          clearcoat={1}
+          roughness={0.05}
+          metalness={0.1}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -106,12 +104,13 @@ function FloatingRazor({
   position: [number, number, number];
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const t = useRef(0);
 
-  useFrame((state) => {
+  useFrame((_, delta) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.z =
-      Math.sin(state.clock.elapsedTime * 0.7) * 0.3;
-    groupRef.current.rotation.y += 0.005;
+    t.current += delta;
+    groupRef.current.rotation.z = Math.sin(t.current * 0.7) * 0.3;
+    groupRef.current.rotation.y += delta * 0.3;
   });
 
   return (
@@ -147,39 +146,153 @@ function FloatingRazor({
 
 function GlowOrb() {
   const ref = useRef<THREE.Mesh>(null);
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!ref.current) return;
-    ref.current.rotation.y += 0.003;
-    ref.current.rotation.x += 0.002;
+    ref.current.rotation.y += delta * 0.18;
+    ref.current.rotation.x += delta * 0.12;
   });
   return (
     <Float speed={0.8} rotationIntensity={0.2} floatIntensity={0.6}>
       <mesh ref={ref} position={[4.2, -1.8, -1]}>
-        <icosahedronGeometry args={[0.6, 2]} />
-        <MeshDistortMaterial
+        <icosahedronGeometry args={[0.6, 1]} />
+        <meshStandardMaterial
           color="#ff5b1a"
           emissive="#ff1f6b"
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.55}
           metalness={0.5}
           roughness={0.15}
-          distort={0.4}
-          speed={1.4}
         />
       </mesh>
     </Float>
   );
 }
 
+function Comb() {
+  const groupRef = useRef<THREE.Group>(null);
+  const t = useRef(0);
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+    t.current += delta;
+    groupRef.current.rotation.z = Math.cos(t.current * 0.55) * 0.35;
+    groupRef.current.rotation.x = Math.sin(t.current * 0.4) * 0.15;
+  });
+  return (
+    <Float speed={1.1} rotationIntensity={0.3} floatIntensity={0.9}>
+      <group ref={groupRef} position={[-2.8, -1.4, 0.2]}>
+        {/* Spine */}
+        <mesh castShadow>
+          <boxGeometry args={[1.3, 0.12, 0.04]} />
+          <meshStandardMaterial
+            color="#111"
+            metalness={0.7}
+            roughness={0.25}
+          />
+        </mesh>
+        {/* Teeth */}
+        {Array.from({ length: 14 }).map((_, i) => (
+          <mesh key={i} position={[-0.6 + i * 0.085, -0.18, 0]} castShadow>
+            <boxGeometry args={[0.03, 0.26, 0.04]} />
+            <meshStandardMaterial
+              color="#1a1a1f"
+              metalness={0.6}
+              roughness={0.3}
+            />
+          </mesh>
+        ))}
+        {/* Accent strip */}
+        <mesh position={[0, 0.08, 0.03]}>
+          <boxGeometry args={[1.1, 0.02, 0.005]} />
+          <meshStandardMaterial
+            color="#ffe14d"
+            emissive="#ffe14d"
+            emissiveIntensity={0.6}
+          />
+        </mesh>
+      </group>
+    </Float>
+  );
+}
+
+// Deterministic pseudo-random so particle seeds are stable across renders.
+function mulberry32(seed: number) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = t;
+    r = Math.imul(r ^ (r >>> 15), r | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Lightweight particle field — instanced mesh with manual shader-free motion.
+function SparkField({ count = 60 }: { count?: number }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const seeds = useMemo(() => {
+    const rand = mulberry32(1337);
+    return Array.from({ length: count }, () => ({
+      x: (rand() - 0.5) * 9,
+      y: (rand() - 0.5) * 5,
+      z: (rand() - 0.5) * 3,
+      speed: 0.2 + rand() * 0.6,
+      phase: rand() * Math.PI * 2,
+      size: 0.02 + rand() * 0.04,
+    }));
+  }, [count]);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const t = useRef(0);
+
+  useFrame((_, delta) => {
+    if (!ref.current) return;
+    t.current += delta;
+    for (let i = 0; i < seeds.length; i++) {
+      const s = seeds[i];
+      dummy.position.set(
+        s.x + Math.sin(t.current * s.speed + s.phase) * 0.25,
+        s.y + Math.cos(t.current * s.speed * 0.7 + s.phase) * 0.35,
+        s.z
+      );
+      dummy.scale.setScalar(s.size);
+      dummy.updateMatrix();
+      ref.current.setMatrixAt(i, dummy.matrix);
+    }
+    ref.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 6, 6]} />
+      <meshBasicMaterial color="#ffe14d" transparent opacity={0.85} />
+    </instancedMesh>
+  );
+}
+
 export function BarberScene() {
   return (
     <Canvas
-      camera={{ position: [0, 0, 5.5], fov: 42 }}
-      dpr={[1, 2]}
+      camera={{ position: [0, 0, 7.5], fov: 42 }}
+      dpr={[1, 1.5]}
       className="!absolute inset-0"
-      gl={{ antialias: true, alpha: true }}
+      gl={{
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+        failIfMajorPerformanceCaveat: false,
+      }}
+      onCreated={({ gl, invalidate }) => {
+        const canvas = gl.domElement;
+        const onLost = (e: Event) => {
+          e.preventDefault();
+        };
+        const onRestored = () => {
+          invalidate();
+        };
+        canvas.addEventListener("webglcontextlost", onLost, false);
+        canvas.addEventListener("webglcontextrestored", onRestored, false);
+      }}
     >
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[5, 6, 4]} intensity={3} />
+      <ambientLight intensity={0.85} />
+      <directionalLight position={[5, 6, 4]} intensity={2.4} />
       <spotLight
         position={[-4, 4, 3]}
         angle={0.7}
@@ -187,8 +300,8 @@ export function BarberScene() {
         intensity={2.4}
         color="#ffe14d"
       />
-      <pointLight position={[2, -2, 2]} intensity={1.2} color="#ff5b1a" />
-      <pointLight position={[-3, -1, 2]} intensity={0.6} color="#1960ff" />
+      <pointLight position={[2, -2, 2]} intensity={1.3} color="#ff5b1a" />
+      <pointLight position={[-3, -1, 2]} intensity={0.8} color="#1960ff" />
 
       {/* Pole offset to the right so it doesn't clash with headline */}
       <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.5}>
@@ -198,9 +311,9 @@ export function BarberScene() {
       </Float>
 
       <FloatingRazor position={[-1.4, 1.8, -0.5]} />
+      <Comb />
       <GlowOrb />
-
-      <Environment preset="city" />
+      <SparkField count={50} />
     </Canvas>
   );
 }

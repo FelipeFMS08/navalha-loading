@@ -5,6 +5,7 @@ import { Marquee } from "@/components/Marquee";
 import { Stats } from "@/components/Stats";
 import { Features } from "@/components/Features";
 import { StyleMatch } from "@/components/StyleMatch";
+import { TryCut } from "@/components/TryCut";
 import { HowItWorks } from "@/components/HowItWorks";
 import { Pricing } from "@/components/Pricing";
 import { Testimonials } from "@/components/Testimonials";
@@ -22,6 +23,7 @@ export default function Home() {
         <Stats />
         <Features />
         <StyleMatch />
+        <TryCut />
         <HowItWorks />
         <Pricing />
         <Testimonials />
